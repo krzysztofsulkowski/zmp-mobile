@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:game_shelf/services/api_service.dart';
 import 'package:game_shelf/views/home_view.dart';
 import 'package:game_shelf/views/register_view.dart';
+import 'package:game_shelf/views/forgot_password_view.dart';
 import 'package:game_shelf/widgets/custom_text_field.dart';
 
 class LoginView extends StatefulWidget {
@@ -118,7 +119,12 @@ class _LoginViewState extends State<LoginView> {
                           Align(
                             alignment: Alignment.centerLeft,
                             child: TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ForgotPasswordView()),
+                                );
+                              },
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.zero,
                                 minimumSize: const Size(0, 0),
