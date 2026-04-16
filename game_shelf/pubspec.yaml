@@ -10,8 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
-  flutter_secure_storage: ^9.2.1
+  flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.0.10+1
+  image_picker: ^1.0.7
 
 dev_dependencies:
   flutter_test:

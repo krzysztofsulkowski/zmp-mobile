@@ -17,6 +17,26 @@ class ApiService {
     };
   }
 
+  // GET request
+  Future<dynamic> getData(String endpoint) async {
+    try {
+      final headers = await _getHeaders();
+      print('API Request: GET $baseUrl/$endpoint');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: headers,
+      );
+
+      print('API Response Status: ${response.statusCode}');
+      return _processResponse(response);
+    } catch (e) {
+      print('API Error: $e');
+      throw Exception('Error connecting to API: $e');
+    }
+  }
+
+  // POST request
   Future<dynamic> postData(String endpoint, Map<String, dynamic> data) async {
     try {
       final headers = await _getHeaders();
@@ -41,6 +61,46 @@ class ApiService {
     }
   }
 
+  // Multipart POST request for Image Upload
+  Future<dynamic> postMultipartData(String endpoint, Map<String, String> fields, File imageFile) async {
+    try {
+      String? token = await _storage.read(key: 'jwt_token');
+      
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$endpoint'));
+      
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      request.fields.addAll(fields);
+
+      var stream = http.ByteStream(imageFile.openRead());
+      var length = await imageFile.length();
+      var multipartFile = http.MultipartFile(
+        'Image', // Match your API's field name
+        stream,
+        length,
+        filename: imageFile.path.split('/').last,
+      );
+      
+      request.files.add(multipartFile);
+
+      print('API Request: Multipart POST $baseUrl/$endpoint');
+      print('Fields: $fields');
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      print('API Response Status: ${response.statusCode}');
+      print('API Response Body: ${response.body}');
+
+      return _processResponse(response);
+    } catch (e) {
+      print('API Error: $e');
+      throw Exception('Error uploading image: $e');
+    }
+  }
+
   dynamic _processResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;
@@ -49,13 +109,9 @@ class ApiService {
       String errorMessage = 'Request failed (${response.statusCode})';
       try {
         final errorData = json.decode(response.body);
-        
-        // 1. Handle .NET Identity Errors (List of {code, description})
         if (errorData is List) {
           errorMessage = errorData.map((e) => e['description'] ?? e.toString()).join('\n');
-        } 
-        // 2. Handle ValidationProblemDetails (ModelState errors)
-        else if (errorData is Map) {
+        } else if (errorData is Map) {
           if (errorData['errors'] != null) {
             var errors = errorData['errors'];
             if (errors is Map) {
@@ -75,5 +131,9 @@ class ApiService {
 
   Future<void> saveToken(String token) async {
     await _storage.write(key: 'jwt_token', value: token);
+  }
+
+  Future<void> logout() async {
+    await _storage.delete(key: 'jwt_token');
   }
 }

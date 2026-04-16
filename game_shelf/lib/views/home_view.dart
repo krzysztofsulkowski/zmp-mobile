@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:game_shelf/views/game_selection_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -92,7 +93,12 @@ class _HomeViewState extends State<HomeView> {
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const GameSelectionView()),
+                            );
+                          },
                           icon: const Icon(Icons.add_circle_outline, color: Colors.white70),
                           label: const Text(
                             'dodaj pierwszą grę',
