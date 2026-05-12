@@ -71,8 +71,9 @@ class _AddGameViewState extends State<AddGameView> {
     setState(() => _isLoading = true);
 
     try {
+      // Changed endpoint from 'games/create-game' to 'games/propose'
       await _apiService.postMultipartData(
-        'games/create-game',
+        'games/propose',
         {
           'Title': _titleController.text.trim(),
           'Description': _descriptionController.text.trim(),
@@ -84,14 +85,14 @@ class _AddGameViewState extends State<AddGameView> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gra została pomyślnie dodana!', style: TextStyle(color: Colors.white))),
+          const SnackBar(content: Text('Propozycja została pomyślnie wysłana!', style: TextStyle(color: Colors.white))),
         );
         Navigator.pop(context, true); // Return true to indicate a refresh is needed
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Błąd dodawania gry: $e', style: const TextStyle(color: Colors.white))),
+          SnackBar(content: Text('Błąd przesyłania propozycji: $e', style: const TextStyle(color: Colors.white))),
         );
       }
     } finally {
@@ -105,9 +106,10 @@ class _AddGameViewState extends State<AddGameView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dodaj nową grę', style: TextStyle(color: Colors.white)),
+        title: const Text('Dodaj nową grę', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF0D0B26),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: Container(
         height: double.infinity,
@@ -119,7 +121,7 @@ class _AddGameViewState extends State<AddGameView> {
           ),
         ),
         child: _isFetchingInitial
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -142,9 +144,9 @@ class _AddGameViewState extends State<AddGameView> {
                             : const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.add_a_photo, color: Colors.white54, size: 50),
+                                  Icon(Icons.add_a_photo, color: Colors.white, size: 50),
                                   SizedBox(height: 10),
-                                  Text('Dodaj okładkę gry', style: TextStyle(color: Colors.white54)),
+                                  Text('Dodaj okładkę gry', style: TextStyle(color: Colors.white)),
                                 ],
                               ),
                       ),
@@ -203,7 +205,7 @@ class _AddGameViewState extends State<AddGameView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),

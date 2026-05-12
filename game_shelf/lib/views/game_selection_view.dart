@@ -28,13 +28,12 @@ class _GameSelectionViewState extends State<GameSelectionView> {
       // Based on your API error, it expects these specific flat keys:
       // "search[value]" and "order[0][dir]"
       final response = await _apiService.postData('games/available-table', {
-        'draw': 1,
+        'draw': 0,
         'start': 0,
         'length': 100,
-        'search[value]': _searchQuery,
-        'search[regex]': false,
-        'order[0][column]': 0,
-        'order[0][dir]': 'asc',
+        'searchValue': _searchQuery,
+        'orderColumn': 0,
+        'orderDir': 'asc',
       });
 
       if (mounted) {
