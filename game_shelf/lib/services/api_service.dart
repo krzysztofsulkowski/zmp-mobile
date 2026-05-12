@@ -61,6 +61,50 @@ class ApiService {
     }
   }
 
+  // PUT request
+  Future<dynamic> putData(String endpoint, Map<String, dynamic> data) async {
+    try {
+      final headers = await _getHeaders();
+      final body = json.encode(data);
+      
+      print('API Request: PUT $baseUrl/$endpoint');
+      print('Request Body: $body');
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: headers,
+        body: body,
+      );
+
+      print('API Response Status: ${response.statusCode}');
+      print('API Response Body: ${response.body}');
+
+      return _processResponse(response);
+    } catch (e) {
+      print('API Error: $e');
+      throw Exception('Error connecting to API: $e');
+    }
+  }
+
+  // DELETE request
+  Future<dynamic> deleteData(String endpoint) async {
+    try {
+      final headers = await _getHeaders();
+      print('API Request: DELETE $baseUrl/$endpoint');
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: headers,
+      );
+
+      print('API Response Status: ${response.statusCode}');
+      return _processResponse(response);
+    } catch (e) {
+      print('API Error: $e');
+      throw Exception('Error connecting to API: $e');
+    }
+  }
+
   // Multipart POST request for Image Upload
   Future<dynamic> postMultipartData(String endpoint, Map<String, String> fields, File imageFile) async {
     try {
@@ -120,7 +164,7 @@ class ApiService {
               errorMessage = errors.map((e) => e['description'] ?? e.toString()).join('\n');
             }
           } else {
-            errorMessage = errorData['message'] ?? errorData['title'] ?? errorMessage;
+            errorMessage = errorData['message'] ?? errorData['title'] ?? errorData['detail'] ?? errorMessage;
           }
         }
       } catch (_) {}

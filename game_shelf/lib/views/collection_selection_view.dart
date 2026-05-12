@@ -25,10 +25,8 @@ class _CollectionSelectionViewState extends State<CollectionSelectionView> {
     setState(() => _isLoading = true);
     try {
       final response = await _apiService.getData('collections/lookup');
-
       if (mounted) {
         setState(() {
-          // The endpoint returns a List directly, not a Map with a 'data' key
           final List dataList = response is List ? response : [];
           _collections = dataList.map((json) => Collection.fromJson(json)).toList();
           _isLoading = false;
@@ -38,68 +36,78 @@ class _CollectionSelectionViewState extends State<CollectionSelectionView> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Błąd pobierania kolekcji: $e', style: const TextStyle(color: Colors.white))),
+          SnackBar(content: Text('Błąd pobierania: $e', style: const TextStyle(color: Colors.white))),
         );
       }
     }
   }
 
-  Future<void> _createCollection() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+  Future<void> _createOrUpdateCollection({int? id, String? initialName, bool? initialIsPublic}) async {
+    _nameController.text = initialName ?? '';
+    bool isPublic = initialIsPublic ?? false;
 
-    try {
-      await _apiService.postData('collections/create', {
-        'Name': name,
-        'IsPublic': true,
-      });
-      
-      _nameController.clear();
-      if (mounted) {
-        Navigator.pop(context); // Close dialog
-        _fetchCollections(); // Refresh list
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kolekcja została utworzona!', style: TextStyle(color: Colors.white))),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Błąd tworzenia kolekcji: $e', style: const TextStyle(color: Colors.white))),
-        );
-      }
-    }
-  }
-
-  void _showCreateDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1640),
-        title: const Text('Nowa kolekcja', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: _nameController,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Nazwa kolekcji',
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7B39FD))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1640),
+          title: Text(id == null ? 'Nowa kolekcja' : 'Edytuj kolekcję', style: const TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Nazwa kolekcji',
+                  hintStyle: TextStyle(color: Colors.white54),
+                ),
+              ),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                title: const Text('Publiczna', style: TextStyle(color: Colors.white)),
+                value: isPublic,
+                onChanged: (val) => setDialogState(() => isPublic = val ?? false),
+                activeColor: const Color(0xFF7B39FD),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Anuluj', style: TextStyle(color: Colors.white70))),
+            ElevatedButton(
+              onPressed: () async {
+                final name = _nameController.text.trim();
+                if (name.isEmpty) return;
+                try {
+                  final body = {'Name': name, 'IsPublic': isPublic};
+                  if (id == null) {
+                    await _apiService.postData('collections/create', body);
+                  } else {
+                    await _apiService.putData('collections/update', {...body, 'Id': id});
+                  }
+                  Navigator.pop(context);
+                  _fetchCollections();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Błąd: $e')));
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B39FD)),
+              child: const Text('Zapisz', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Anuluj', style: TextStyle(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            onPressed: _createCollection,
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B39FD)),
-            child: const Text('Utwórz', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
+  }
+
+  Future<void> _deleteCollection(int id) async {
+    try {
+      await _apiService.deleteData('collections/delete/$id');
+      _fetchCollections();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Błąd usuwania: $e')));
+    }
   }
 
   @override
@@ -108,7 +116,6 @@ class _CollectionSelectionViewState extends State<CollectionSelectionView> {
       appBar: AppBar(
         title: const Text('Twoje Kolekcje', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF0D0B26),
-        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       body: Container(
@@ -124,54 +131,34 @@ class _CollectionSelectionViewState extends State<CollectionSelectionView> {
             : Column(
                 children: [
                   Expanded(
-                    child: _collections.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Nie znaleziono żadnych kolekcji.',
-                              style: TextStyle(color: Colors.white, fontSize: 16),
+                    child: ListView.builder(
+                      itemCount: _collections.length,
+                      itemBuilder: (context, index) {
+                        final col = _collections[index];
+                        return Card(
+                          color: Colors.white10,
+                          child: ListTile(
+                            onTap: () => Navigator.pop(context, col),
+                            title: Text(col.name, style: const TextStyle(color: Colors.white)),
+                            subtitle: Text(col.isPublic ? 'Publiczna' : 'Prywatna', style: const TextStyle(color: Colors.white54)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _createOrUpdateCollection(id: col.id, initialName: col.name, initialIsPublic: col.isPublic)),
+                                IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteCollection(col.id)),
+                              ],
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _collections.length,
-                            itemBuilder: (context, index) {
-                              final collection = _collections[index];
-                              return Card(
-                                color: Colors.white10,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                child: ListTile(
-                                  title: Text(
-                                    collection.name,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Text(
-                                    'Gier: ${collection.games.length}',
-                                    style: const TextStyle(color: Colors.white70),
-                                  ),
-                                  trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-                                  onTap: () {
-                                    Navigator.pop(context, collection);
-                                  },
-                                ),
-                              );
-                            },
                           ),
+                        );
+                      },
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(24.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        onPressed: _showCreateDialog,
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text('STWÓRZ NOWĄ KOLEKCJĘ', 
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7B39FD),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                        ),
-                      ),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _createOrUpdateCollection(),
+                      icon: const Icon(Icons.add),
+                      label: const Text('STWÓRZ NOWĄ KOLEKCJĘ'),
                     ),
                   ),
                 ],
