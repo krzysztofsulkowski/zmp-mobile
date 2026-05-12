@@ -15,10 +15,11 @@ class Collection {
 
   factory Collection.fromJson(Map<String, dynamic> json) {
     return Collection(
-      id: json['id'] ?? json['Id'] ?? 0,
-      name: json['name'] ?? json['Name'] ?? 'Bez nazwy',
+      id: json['collectionId'] ?? json['id'] ?? json['Id'] ?? 0,
+      name: json['collectionName'] ?? json['name'] ?? json['Name'] ?? 'Bez nazwy',
       isPublic: json['isPublic'] ?? json['IsPublic'] ?? false,
-      games: (json['games'] ?? json['Games'] as List?)
+      // API uses "games" which contains objects with "gameId"
+      games: (json['games'] as List?)
               ?.map((g) => Game.fromJson(g))
               .toList() ??
           [],

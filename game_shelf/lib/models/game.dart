@@ -1,31 +1,21 @@
 class Game {
   final int id;
   final String title;
-  final int genreId;
   final String imageUrl;
 
   Game({
     required this.id,
     required this.title,
-    required this.genreId,
     required this.imageUrl,
   });
 
   factory Game.fromJson(Map<String, dynamic> json) {
+    // The API response uses "gameId" instead of "id"
     return Game(
-      id: json['id'],
-      title: json['title'],
-      genreId: json['genreId'],
-      imageUrl: json['imageUrl'],
+      id: json['gameId'] ?? json['id'] ?? 0,
+      title: json['title'] ?? json['Title'] ?? 'Bez nazwy',
+      // If imageUrl is null, use a placeholder
+      imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/150',
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'genreId': genreId,
-      'imageUrl': imageUrl,
-    };
   }
 }

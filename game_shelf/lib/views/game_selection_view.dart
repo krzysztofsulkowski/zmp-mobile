@@ -4,7 +4,8 @@ import 'package:game_shelf/services/api_service.dart';
 import 'package:game_shelf/views/add_game_view.dart';
 
 class GameSelectionView extends StatefulWidget {
-  const GameSelectionView({super.key});
+  final int? collectionId;
+  const GameSelectionView({super.key, this.collectionId});
 
   @override
   State<GameSelectionView> createState() => _GameSelectionViewState();
@@ -25,8 +26,6 @@ class _GameSelectionViewState extends State<GameSelectionView> {
   Future<void> _fetchGames() async {
     setState(() => _isLoading = true);
     try {
-      // Based on your API error, it expects these specific flat keys:
-      // "search[value]" and "order[0][dir]"
       final response = await _apiService.postData('games/available-table', {
         'draw': 0,
         'start': 0,
@@ -38,7 +37,6 @@ class _GameSelectionViewState extends State<GameSelectionView> {
 
       if (mounted) {
         setState(() {
-          // Check if data is nested or direct
           final List dataList = response['data'] ?? [];
           _availableGames = dataList.map((json) => Game.fromJson(json)).toList();
           _isLoading = false;
@@ -56,7 +54,13 @@ class _GameSelectionViewState extends State<GameSelectionView> {
 
   Future<void> _addGameToCollection(int gameId) async {
     try {
-      await _apiService.postData('games/add-to-collection/$gameId', {});
+      // Add ?collectionId=... if a collection is selected
+      String url = 'games/add-to-collection/$gameId';
+      if (widget.collectionId != null) {
+        url += '?collectionId=${widget.collectionId}';
+      }
+      
+      await _apiService.postData(url, {});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
