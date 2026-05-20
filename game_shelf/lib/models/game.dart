@@ -11,11 +11,16 @@ class Game {
 
   factory Game.fromJson(Map<String, dynamic> json) {
     // The API response uses "gameId" instead of "id"
+    // Also ensuring imageUrl is handled if null or invalid
+    final imageUrl = json['imageUrl'];
+    
     return Game(
       id: json['gameId'] ?? json['id'] ?? 0,
       title: json['title'] ?? json['Title'] ?? 'Bez nazwy',
-      // If imageUrl is null, use a placeholder
-      imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/150',
+      // We check if imageUrl is a valid URL, otherwise provide a fallback
+      imageUrl: (imageUrl != null && imageUrl is String && imageUrl.isNotEmpty) 
+          ? imageUrl 
+          : 'https://placehold.co/150x150/png',
     );
   }
 }

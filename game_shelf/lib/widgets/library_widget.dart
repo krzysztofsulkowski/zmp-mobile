@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:game_shelf/models/collection.dart';
 import 'package:game_shelf/views/collection_selection_view.dart';
 import 'package:game_shelf/views/game_selection_view.dart';
+import 'package:game_shelf/views/game_details_view.dart';
 import 'package:game_shelf/services/api_service.dart';
 import 'package:game_shelf/widgets/main_container.dart';
 
@@ -15,7 +16,26 @@ class LibraryWidget extends StatefulWidget {
 class _LibraryWidgetState extends State<LibraryWidget> {
   final _apiService = ApiService();
   Collection? _selectedCollection;
+  List<Collection> _allCollections = [];
   bool _isLoadingGames = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllCollections();
+  }
+
+  Future<void> _fetchAllCollections() async {
+    try {
+      final response = await _apiService.getData('collections/lookup');
+      final List dataList = response is List ? response : [];
+      if (mounted) {
+        setState(() => _allCollections = dataList.map((json) => Collection.fromJson(json)).toList());
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
+    }
+  }
 
   Future<void> _fetchCollectionGames() async {
     if (_selectedCollection == null) return;
@@ -31,10 +51,7 @@ class _LibraryWidgetState extends State<LibraryWidget> {
         setState(() => _isLoadingGames = false);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingGames = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Błąd: $e')));
-      }
+      if (mounted) setState(() => _isLoadingGames = false);
     }
   }
 
@@ -78,6 +95,16 @@ class _LibraryWidgetState extends State<LibraryWidget> {
                       child: Image.network(game.imageUrl, width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.gamepad, color: Colors.white)),
                     ),
                     title: Text(game.title, style: const TextStyle(color: Colors.white)),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => GameDetailsView(
+                          game: game,
+                          collectionId: _selectedCollection!.id,
+                          allCollections: _allCollections,
+                          onRefresh: _fetchCollectionGames,
+                        ),
+                      ));
+                    },
                   );
                 },
               ),
