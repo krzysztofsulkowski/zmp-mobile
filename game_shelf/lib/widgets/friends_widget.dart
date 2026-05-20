@@ -12,11 +12,13 @@ class FriendsWidget extends StatefulWidget {
 class _FriendsWidgetState extends State<FriendsWidget> {
   final _apiService = ApiService();
   final _searchController = TextEditingController();
+  final _emailController = TextEditingController();
   List<dynamic> _friends = [];
   List<dynamic> _pendingRequests = [];
   List<dynamic> _searchResults = [];
   bool _isLoading = true;
   bool _isSearching = false;
+  bool _showEmailInput = false;
 
   @override
   void initState() {
@@ -63,15 +65,28 @@ class _FriendsWidgetState extends State<FriendsWidget> {
   }
 
   Future<void> _acceptInvite(dynamic requesterId) async {
-    print('Accepting request for ID: $requesterId');
     await _apiService.postData('friends/accept/$requesterId', {});
     _loadData();
   }
 
   Future<void> _rejectInvite(dynamic friendId) async {
-    print('Rejecting request for ID: $friendId');
     await _apiService.deleteData('friends/reject-or-remove/$friendId');
     _loadData();
+  }
+
+  Future<void> _sendInviteByEmail() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) return;
+    try {
+      await _apiService.postData('friends/send-invite?email=$email', {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Zaproszenie e-mail wysłane!')));
+        _emailController.clear();
+        setState(() => _showEmailInput = false);
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Błąd: $e')));
+    }
   }
 
   @override
@@ -90,6 +105,35 @@ class _FriendsWidgetState extends State<FriendsWidget> {
               enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
             ),
           ),
+          const SizedBox(height: 10),
+          
+          if (!_showEmailInput)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _showEmailInput = true),
+                icon: const Icon(Icons.email, color: Color(0xFF7B39FD)),
+                label: const Text('Zaproś przez e-mail', style: TextStyle(color: Colors.white)),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _emailController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: 'Wpisz e-mail...',
+                      hintStyle: TextStyle(color: Colors.white54),
+                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                    ),
+                  ),
+                ),
+                IconButton(icon: const Icon(Icons.send, color: Color(0xFF7B39FD)), onPressed: _sendInviteByEmail),
+              ],
+            ),
+
           const SizedBox(height: 10),
           Expanded(
             child: _isLoading
@@ -113,7 +157,6 @@ class _FriendsWidgetState extends State<FriendsWidget> {
                         const Divider(color: Colors.white24),
                         const Text('Oczekujące zaproszenia', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
                         ..._pendingRequests.map((req) {
-                          // USE userId AS REQUESTER ID
                           final id = req['userId'];
                           return ListTile(
                             title: Text(req['userName'] ?? 'Nieznany', style: const TextStyle(color: Colors.white)),
