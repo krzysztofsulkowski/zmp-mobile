@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:game_shelf/widgets/library_widget.dart';
 import 'package:game_shelf/widgets/friends_widget.dart';
+import 'package:game_shelf/widgets/stats_widget.dart';
 import 'package:game_shelf/views/profile_view.dart';
 import 'package:game_shelf/services/api_service.dart';
 
@@ -51,53 +52,35 @@ class _HomeViewState extends State<HomeView> {
           child: Column(
             children: [
               const SizedBox(height: 20),
-              // Header Row: Avatar | Logo | Padding
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(width: 40), // Spacer for centering logo
+                    const SizedBox(width: 40),
                     SvgPicture.asset('assets/images/logo.svg', height: 50),
                     GestureDetector(
                       onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ProfileView()),
-                        );
-                        _fetchProfile(); // Refresh avatar when coming back
+                        await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileView()));
+                        _fetchProfile();
                       },
                       child: CircleAvatar(
                         backgroundColor: const Color(0xFF7B39FD),
-                        backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                            ? NetworkImage(_avatarUrl!)
-                            : null,
-                        child: _avatarUrl == null || _avatarUrl!.isEmpty
-                            ? const Icon(Icons.person, color: Colors.white)
-                            : null,
+                        backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty) ? NetworkImage(_avatarUrl!) : null,
+                        child: (_avatarUrl == null || _avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.white) : null,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
-                _getTitle(),
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500),
-              ),
+              Text(_getTitle(), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500)),
               const SizedBox(height: 20),
-              
-              Expanded(
-                child: _getSelectedWidget(),
-              ),
-              
+              Expanded(child: _getSelectedWidget()),
               Container(
                 height: 70,
                 margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(40),
-                ),
+                decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(40)),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -131,6 +114,7 @@ class _HomeViewState extends State<HomeView> {
     switch (_selectedIndex) {
       case 1: return const FriendsWidget();
       case 2: return const LibraryWidget();
+      case 3: return const StatsWidget();
       default: return const Center(child: Text('W budowie', style: TextStyle(color: Colors.white)));
     }
   }
@@ -139,11 +123,7 @@ class _HomeViewState extends State<HomeView> {
     bool isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
-      child: Icon(
-        icon,
-        color: isSelected ? Colors.white : Colors.white54,
-        size: 28,
-      ),
+      child: Icon(icon, color: isSelected ? Colors.white : Colors.white54, size: 28),
     );
   }
 }
