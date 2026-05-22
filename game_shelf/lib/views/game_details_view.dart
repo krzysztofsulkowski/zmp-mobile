@@ -3,6 +3,7 @@ import 'package:game_shelf/models/collection.dart';
 import 'package:game_shelf/models/game.dart';
 import 'package:game_shelf/views/move_game_view.dart';
 import 'package:game_shelf/services/api_service.dart';
+import 'package:game_shelf/widgets/game_image_widget.dart';
 
 class GameDetailsView extends StatefulWidget {
   final Game game;
@@ -42,7 +43,7 @@ class _GameDetailsViewState extends State<GameDetailsView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.game.title, style: const TextStyle(color: Colors.white)),
+        title: Text(widget.game.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF0D0B26),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -57,11 +58,7 @@ class _GameDetailsViewState extends State<GameDetailsView> {
         ),
         child: Column(
           children: [
-            if (widget.game.imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.network(widget.game.imageUrl, height: 250, width: double.infinity, fit: BoxFit.cover),
-              ),
+            GameImageWidget(imageUrl: widget.game.imageUrl, height: 250),
             const SizedBox(height: 24),
             Text(widget.game.title, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
             const Spacer(),

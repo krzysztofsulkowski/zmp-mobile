@@ -17,132 +17,82 @@ class ApiService {
     };
   }
 
-  // GET request
   Future<dynamic> getData(String endpoint) async {
     try {
-      final headers = await _getHeaders();
-      print('API Request: GET $baseUrl/$endpoint');
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: headers,
-      );
-
-      print('API Response Status: ${response.statusCode}');
+      final token = await _storage.read(key: 'jwt_token');
+      final headers = {'Accept': 'application/json', if (token != null) 'Authorization': 'Bearer $token'};
+      final response = await http.get(Uri.parse('$baseUrl/$endpoint'), headers: headers);
       return _processResponse(response);
     } catch (e) {
-      print('API Error: $e');
       throw Exception('Error connecting to API: $e');
     }
   }
 
-  // POST request
   Future<dynamic> postData(String endpoint, Map<String, dynamic> data) async {
     try {
-      final headers = await _getHeaders();
-      final body = json.encode(data);
-      
-      print('API Request: POST $baseUrl/$endpoint');
-      print('Request Body: $body');
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: headers,
-        body: body,
-      );
-
-      print('API Response Status: ${response.statusCode}');
-      print('API Response Body: ${response.body}');
-
+      final token = await _storage.read(key: 'jwt_token');
+      final headers = {'Content-Type': 'application/json; charset=UTF-8', 'Accept': 'application/json', if (token != null) 'Authorization': 'Bearer $token'};
+      final response = await http.post(Uri.parse('$baseUrl/$endpoint'), headers: headers, body: json.encode(data));
       return _processResponse(response);
     } catch (e) {
-      print('API Error: $e');
       throw Exception('Error connecting to API: $e');
     }
   }
 
-  // PUT request
   Future<dynamic> putData(String endpoint, Map<String, dynamic> data) async {
     try {
-      final headers = await _getHeaders();
-      final body = json.encode(data);
-      
-      print('API Request: PUT $baseUrl/$endpoint');
-      print('Request Body: $body');
-
-      final response = await http.put(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: headers,
-        body: body,
-      );
-
-      print('API Response Status: ${response.statusCode}');
-      print('API Response Body: ${response.body}');
-
+      final token = await _storage.read(key: 'jwt_token');
+      final headers = {'Content-Type': 'application/json; charset=UTF-8', 'Accept': 'application/json', if (token != null) 'Authorization': 'Bearer $token'};
+      final response = await http.put(Uri.parse('$baseUrl/$endpoint'), headers: headers, body: json.encode(data));
       return _processResponse(response);
     } catch (e) {
-      print('API Error: $e');
       throw Exception('Error connecting to API: $e');
     }
   }
 
-  // DELETE request
   Future<dynamic> deleteData(String endpoint) async {
     try {
-      final headers = await _getHeaders();
-      print('API Request: DELETE $baseUrl/$endpoint');
-
-      final response = await http.delete(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: headers,
-      );
-
-      print('API Response Status: ${response.statusCode}');
+      final token = await _storage.read(key: 'jwt_token');
+      final headers = {'Accept': 'application/json', if (token != null) 'Authorization': 'Bearer $token'};
+      final response = await http.delete(Uri.parse('$baseUrl/$endpoint'), headers: headers);
       return _processResponse(response);
     } catch (e) {
-      print('API Error: $e');
       throw Exception('Error connecting to API: $e');
     }
   }
 
-  // Multipart POST request for Image Upload
-  Future<dynamic> postMultipartData(String endpoint, Map<String, String> fields, File imageFile) async {
+  // Generalized Multipart Request
+  Future<dynamic> sendMultipart({
+    required String endpoint,
+    required String method,
+    required Map<String, String> fields,
+    File? imageFile,
+    String fileKey = 'Image',
+  }) async {
     try {
       String? token = await _storage.read(key: 'jwt_token');
+      var request = http.MultipartRequest(method, Uri.parse('$baseUrl/$endpoint'));
       
-      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$endpoint'));
-      
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
-
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
       request.fields.addAll(fields);
 
-      var stream = http.ByteStream(imageFile.openRead());
-      var length = await imageFile.length();
-      var multipartFile = http.MultipartFile(
-        'Image', // Match your API's field name
-        stream,
-        length,
-        filename: imageFile.path.split('/').last,
-      );
-      
-      request.files.add(multipartFile);
+      if (imageFile != null && imageFile.path.isNotEmpty && await imageFile.exists()) {
+        var multipartFile = await http.MultipartFile.fromPath(fileKey, imageFile.path);
+        request.files.add(multipartFile);
+      }
 
-      print('API Request: Multipart POST $baseUrl/$endpoint');
-      print('Fields: $fields');
-
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-
-      print('API Response Status: ${response.statusCode}');
-      print('API Response Body: ${response.body}');
-
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
       return _processResponse(response);
     } catch (e) {
       print('API Error: $e');
-      throw Exception('Error uploading image: $e');
+      throw Exception('Error uploading: $e');
     }
+  }
+
+  // For backward compatibility with AddGameView
+  Future<dynamic> postMultipartData(String endpoint, Map<String, String> fields, File imageFile) async {
+    return sendMultipart(endpoint: endpoint, method: 'POST', fields: fields, imageFile: imageFile, fileKey: 'Image');
   }
 
   dynamic _processResponse(http.Response response) {
@@ -153,22 +103,9 @@ class ApiService {
       String errorMessage = 'Request failed (${response.statusCode})';
       try {
         final errorData = json.decode(response.body);
-        if (errorData is List) {
-          errorMessage = errorData.map((e) => e['description'] ?? e.toString()).join('\n');
-        } else if (errorData is Map) {
-          if (errorData['errors'] != null) {
-            var errors = errorData['errors'];
-            if (errors is Map) {
-              errorMessage = errors.values.expand((v) => v is List ? v : [v]).join('\n');
-            } else if (errors is List) {
-              errorMessage = errors.map((e) => e['description'] ?? e.toString()).join('\n');
-            }
-          } else {
-            errorMessage = errorData['message'] ?? errorData['title'] ?? errorData['detail'] ?? errorMessage;
-          }
-        }
+        if (errorData is Map && errorData['detail'] != null) errorMessage = errorData['detail'];
+        else if (errorData is Map && errorData['message'] != null) errorMessage = errorData['message'];
       } catch (_) {}
-      
       throw Exception(errorMessage);
     }
   }

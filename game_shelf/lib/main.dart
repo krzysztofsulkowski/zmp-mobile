@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:game_shelf/views/landing_view.dart';
+import 'package:game_shelf/views/login_view.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -20,9 +21,13 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LandingView(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const LandingView(),
+        '/login': (context) => const LoginView(),
+      },
     );
   }
 }

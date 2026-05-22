@@ -92,7 +92,14 @@ class _LibraryWidgetState extends State<LibraryWidget> {
                   return ListTile(
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.network(game.imageUrl, width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.gamepad, color: Colors.white)),
+                      child: Image.network(
+                        game.imageUrl,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.gamepad, color: Colors.white),
+                      ),
                     ),
                     title: Text(game.title, style: const TextStyle(color: Colors.white)),
                     onTap: () {
