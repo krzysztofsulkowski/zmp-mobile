@@ -169,8 +169,11 @@ class _LoginViewState extends State<LoginView> {
                           const SizedBox(height: 16),
                           OutlinedButton.icon(
                             onPressed: () {},
-                            // Using a simple icon instead of a remote URL to avoid handshake/400 errors
-                            icon: const Icon(Icons.g_mobiledata, color: Colors.black, size: 30),
+                            icon: Image.network(
+                              'https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png',
+                              height: 24,
+                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, color: Colors.black, size: 30),
+                            ),
                             label: const Text(
                               'Kontynuuj przez Google',
                               style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
