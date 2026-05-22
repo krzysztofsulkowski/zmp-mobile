@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:game_shelf/services/api_service.dart';
 import 'package:game_shelf/widgets/main_container.dart';
+import 'package:game_shelf/views/friend_collections_view.dart';
 
 class FriendsWidget extends StatefulWidget {
   const FriendsWidget({super.key});
@@ -173,7 +174,22 @@ class _FriendsWidgetState extends State<FriendsWidget> {
                       const Divider(color: Colors.white24),
                       const Text('Znajomi', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
                       ..._friends.map((friend) => ListTile(
+                        onTap: () {
+                          final friendId = friend['userId'] ?? friend['id'];
+                          if (friendId != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FriendCollectionsView(
+                                  friendId: friendId.toString(),
+                                  friendName: friend['userName'] ?? 'Nieznany',
+                                ),
+                              ),
+                            );
+                          }
+                        },
                         title: Text(friend['userName'] ?? 'Nieznany', style: const TextStyle(color: Colors.white)),
+                        trailing: const Icon(Icons.chevron_right, color: Colors.white24),
                       )),
                     ],
                   ),
